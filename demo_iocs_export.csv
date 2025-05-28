@@ -1,0 +1,8 @@
+ID,IOC Value,IOC Type,Chat ID,Chat Title,Message ID,Message Content,Sender ID,Sender Username,Detected At
+7,suspicious.ru,domain,999999,Demo Chat,12345,Demo message containing Demo Russian domain,123,demo_user,2025-05-28 14:58:49
+6,10.0.0.1,ip,999999,Demo Chat,12345,Demo message containing Demo internal IP,123,demo_user,2025-05-28 14:58:49
+5,https://phishing-site.example,url,999999,Demo Chat,12345,Demo message containing Demo phishing URL,123,demo_user,2025-05-28 14:58:49
+4,malicious-domain.com,domain,999999,Demo Chat,12345,Demo message containing Demo suspicious domain,123,demo_user,2025-05-28 14:58:49
+3,192.168.1.100,ip,999999,Demo Chat,12345,Demo message containing Demo adding IP address,123,demo_user,2025-05-28 14:58:49
+2,https://youtube.com/playlist?list=PL81zAGF4RyWatD7oNhws0HL2NIGEKTEZm&si=Umes9tCqkyaHmMqW,url,-1001029733843,Irishfurries (SFW),2718740,https://youtube.com/playlist?list=PL81zAGF4RyWatD7oNhws0HL2NIGEKTEZm&si=Umes9tCqkyaHmMqW,1593891006,themouldymushroom,2025-05-28 14:48:06
+1,https://youtu.be/NN75im_us4k?si=fEGfV-eFvtK1GJH4,url,-1001029733843,Irishfurries (SFW),2718739,https://youtu.be/NN75im_us4k?si=fEGfV-eFvtK1GJH4,1593891006,themouldymushroom,2025-05-28 14:43:35
