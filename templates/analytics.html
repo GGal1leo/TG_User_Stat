@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - IOC Monitor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4"><i class="fas fa-chart-bar"></i> IOC Analytics</h1>
+    </div>
+</div>
+
+<!-- Summary Statistics -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-pie-chart"></i> IOC Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="iocTypeChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-line-chart"></i> Daily Activity</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="dailyActivityChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Statistics -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-table"></i> Detailed Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Total IOCs:</strong></td>
+                                <td>{{ stats.get('total_iocs', 0) }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Unique IOCs:</strong></td>
+                                <td>{{ stats.get('unique_iocs', 0) }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>IP Addresses:</strong></td>
+                                <td>{{ stats.get('ip_count', 0) }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Domains:</strong></td>
+                                <td>{{ stats.get('domain_count', 0) }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>URLs:</strong></td>
+                                <td>{{ stats.get('url_count', 0) }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Collection Efficiency</h6>
+                        <div class="progress mb-2">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: {{ ((stats.get('unique_iocs', 1) / stats.get('total_iocs', 1)) * 100) | round }}%">
+                                Unique Rate: {{ ((stats.get('unique_iocs', 1) / stats.get('total_iocs', 1)) * 100) | round }}%
+                            </div>
+                        </div>
+                        
+                        {% if stats.get('total_iocs', 0) > 0 %}
+                        <small class="text-muted">
+                            <strong>Duplicate Rate:</strong> 
+                            {{ (((stats.get('total_iocs', 0) - stats.get('unique_iocs', 0)) / stats.get('total_iocs', 1)) * 100) | round }}%
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Sources -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-trophy"></i> Top IOC Types</h5>
+            </div>
+            <div class="card-body">
+                {% if ioc_types %}
+                    {% for type, count in ioc_types.items() %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>
+                            {% if type == 'ip' %}
+                                <i class="fas fa-network-wired text-success"></i> IP Addresses
+                            {% elif type == 'domain' %}
+                                <i class="fas fa-globe text-warning"></i> Domains
+                            {% elif type == 'url' %}
+                                <i class="fas fa-link text-info"></i> URLs
+                            {% endif %}
+                        </span>
+                        <span class="badge bg-primary">{{ count }}</span>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ (count / stats.get('total_iocs', 1) * 100) | round }}%"></div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No data available</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar"></i> Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                {% if daily_activity %}
+                    {% for date, count in daily_activity.items() %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>{{ date }}</span>
+                        <span class="badge bg-secondary">{{ count }} IOCs</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No recent activity</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// IOC Type Distribution Chart
+const iocTypeCtx = document.getElementById('iocTypeChart').getContext('2d');
+const iocTypeChart = new Chart(iocTypeCtx, {
+    type: 'doughnut',
+    data: {
+        labels: [
+            {% for type, count in ioc_types.items() %}
+            '{{ type.title() }}',
+            {% endfor %}
+        ],
+        datasets: [{
+            data: [
+                {% for type, count in ioc_types.items() %}
+                {{ count }},
+                {% endfor %}
+            ],
+            backgroundColor: [
+                '#28a745',  // Green for IPs
+                '#ffc107',  // Yellow for domains
+                '#17a2b8',  // Blue for URLs
+                '#6c757d'   // Gray for others
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Daily Activity Chart
+const dailyActivityCtx = document.getElementById('dailyActivityChart').getContext('2d');
+const dailyActivityChart = new Chart(dailyActivityCtx, {
+    type: 'line',
+    data: {
+        labels: [
+            {% for date, count in daily_activity.items() %}
+            '{{ date }}',
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'IOCs Detected',
+            data: [
+                {% for date, count in daily_activity.items() %}
+                {{ count }},
+                {% endfor %}
+            ],
+            borderColor: '#007bff',
+            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

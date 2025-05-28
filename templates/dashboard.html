@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - IOC Monitor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4"><i class="fas fa-tachometer-alt"></i> IOC Monitor Dashboard</h1>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ stats.get('total_iocs', 0) }}</h4>
+                        <p class="card-text">Total IOCs</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-database fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ stats.get('ip_count', 0) }}</h4>
+                        <p class="card-text">IP Addresses</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-network-wired fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ stats.get('domain_count', 0) }}</h4>
+                        <p class="card-text">Domains</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-globe fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ stats.get('url_count', 0) }}</h4>
+                        <p class="card-text">URLs</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-link fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Unique IOCs Card -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-fingerprint"></i> Unique IOCs</h5>
+            </div>
+            <div class="card-body">
+                <h3 class="text-primary">{{ stats.get('unique_iocs', 0) }}</h3>
+                <p class="text-muted">Distinct IOC values in database</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-clock"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('list_iocs') }}" class="btn btn-primary mb-2 d-block">
+                    <i class="fas fa-list"></i> View All IOCs
+                </a>
+                <a href="{{ url_for('search') }}" class="btn btn-success mb-2 d-block">
+                    <i class="fas fa-search"></i> Search IOCs
+                </a>
+                <a href="{{ url_for('export_csv') }}" class="btn btn-warning d-block">
+                    <i class="fas fa-download"></i> Export to CSV
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent IOCs -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between">
+                <h5><i class="fas fa-history"></i> Recent IOCs</h5>
+                <a href="{{ url_for('list_iocs') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_iocs %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>IOC Value</th>
+                                    <th>Type</th>
+                                    <th>Source Chat</th>
+                                    <th>Message</th>
+                                    <th>Detected</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ioc in recent_iocs %}
+                                <tr>
+                                    <td>
+                                        <code class="ioc-value">{{ ioc.ioc_value }}</code>
+                                        {% if ioc.ioc_type == 'ip' %}
+                                            <span class="badge bg-success">IP</span>
+                                        {% elif ioc.ioc_type == 'domain' %}
+                                            <span class="badge bg-warning">Domain</span>
+                                        {% elif ioc.ioc_type == 'url' %}
+                                            <span class="badge bg-info">URL</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ ioc.ioc_type|upper }}</span>
+                                    </td>
+                                    <td>{{ ioc.source_chat_title or 'Unknown' }}</td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ ioc.message_content|truncate_text(60) if ioc.message_content else 'N/A' }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small>{{ ioc.detected_at }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No IOCs detected yet</h5>
+                        <p class="text-muted">Start your Telegram monitor to begin collecting IOCs</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}Search - IOC Monitor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4"><i class="fas fa-search"></i> Search IOCs</h1>
+    </div>
+</div>
+
+<!-- Search Interface -->
+<div class="row mb-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-body">
+                <form id="searchForm">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <input type="text" class="form-control form-control-lg" 
+                                   id="searchInput" placeholder="Enter search term..." 
+                                   autocomplete="off">
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <select class="form-select" id="searchType">
+                                <option value="">All Types</option>
+                                <option value="ip">IP Addresses</option>
+                                <option value="domain">Domains</option>
+                                <option value="url">URLs</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <select class="form-select" id="searchLimit">
+                                <option value="50">50 Results</option>
+                                <option value="100" selected>100 Results</option>
+                                <option value="500">500 Results</option>
+                                <option value="1000">1000 Results</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Suggestions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-lightbulb"></i> Search Tips</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Search Examples:</h6>
+                        <ul class="list-unstyled">
+                            <li><code>malicious.com</code> - Find specific domain</li>
+                            <li><code>192.168</code> - Find IPs starting with 192.168</li>
+                            <li><code>https://</code> - Find all HTTPS URLs</li>
+                            <li><code>.ru</code> - Find all .ru domains</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Quick Searches:</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="quickSearch('.exe')">
+                                .exe files
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="quickSearch('http://')">
+                                HTTP URLs
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="quickSearch('.onion')">
+                                Onion domains
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="quickSearch('t.me')">
+                                Telegram links
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Results -->
+<div id="searchResults" style="display: none;">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <h5><i class="fas fa-list"></i> Search Results</h5>
+                    <span id="resultCount" class="badge bg-primary"></span>
+                </div>
+                <div class="card-body">
+                    <div id="resultsTable"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Spinner -->
+<div id="loadingSpinner" class="text-center" style="display: none;">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-2">Searching...</p>
+</div>
+
+<!-- No Results -->
+<div id="noResults" class="text-center" style="display: none;">
+    <i class="fas fa-search fa-4x text-muted mb-3"></i>
+    <h4 class="text-muted">No results found</h4>
+    <p class="text-muted">Try a different search term or check your spelling</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('searchForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    performSearch();
+});
+
+function quickSearch(term) {
+    document.getElementById('searchInput').value = term;
+    performSearch();
+}
+
+async function performSearch() {
+    const searchTerm = document.getElementById('searchInput').value.trim();
+    const searchType = document.getElementById('searchType').value;
+    const searchLimit = document.getElementById('searchLimit').value;
+    
+    if (!searchTerm) {
+        alert('Please enter a search term');
+        return;
+    }
+    
+    // Show loading
+    document.getElementById('loadingSpinner').style.display = 'block';
+    document.getElementById('searchResults').style.display = 'none';
+    document.getElementById('noResults').style.display = 'none';
+    
+    try {
+        const params = new URLSearchParams({
+            search: searchTerm,
+            limit: searchLimit
+        });
+        
+        if (searchType) {
+            params.append('type', searchType);
+        }
+        
+        const response = await fetch(`/api/iocs?${params}`);
+        const results = await response.json();
+        
+        document.getElementById('loadingSpinner').style.display = 'none';
+        
+        if (results.length > 0) {
+            displayResults(results);
+        } else {
+            document.getElementById('noResults').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Search error:', error);
+        document.getElementById('loadingSpinner').style.display = 'none';
+        alert('Search failed. Please try again.');
+    }
+}
+
+function displayResults(results) {
+    document.getElementById('resultCount').textContent = `${results.length} results`;
+    
+    const tableHtml = `
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>IOC Value</th>
+                        <th>Type</th>
+                        <th>Source</th>
+                        <th>Detected</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${results.map(ioc => `
+                        <tr>
+                            <td>
+                                <code>${ioc.ioc_value}</code>
+                                <button class="btn btn-sm btn-outline-secondary ms-2" 
+                                        onclick="copyToClipboard('${ioc.ioc_value}')" 
+                                        title="Copy to clipboard">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </td>
+                            <td>
+                                <span class="badge bg-${getTypeBadgeColor(ioc.ioc_type)}">
+                                    ${ioc.ioc_type.toUpperCase()}
+                                </span>
+                            </td>
+                            <td>${ioc.source_chat_title || 'Unknown'}</td>
+                            <td>
+                                <small>${formatDateTime(ioc.detected_at)}</small>
+                            </td>
+                            <td>
+                                ${ioc.ioc_type === 'url' ? 
+                                    `<a href="${ioc.ioc_value}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>` : ''
+                                }
+                                <button class="btn btn-sm btn-outline-info" 
+                                        onclick="viewDetails('${ioc.id}')" 
+                                        title="View details">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    document.getElementById('resultsTable').innerHTML = tableHtml;
+    document.getElementById('searchResults').style.display = 'block';
+}
+
+function getTypeBadgeColor(type) {
+    switch(type) {
+        case 'ip': return 'success';
+        case 'domain': return 'warning';
+        case 'url': return 'info';
+        default: return 'secondary';
+    }
+}
+
+function formatDateTime(dateString) {
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleString();
+    } catch {
+        return dateString;
+    }
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        const toast = document.createElement('div');
+        toast.className = 'toast align-items-center text-white bg-success border-0 position-fixed top-0 end-0 m-3';
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">Copied to clipboard!</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        setTimeout(() => toast.remove(), 3000);
+    });
+}
+
+function viewDetails(iocId) {
+    // Redirect to IOCs page with specific search
+    window.location.href = `/iocs`;
+}
+</script>
+{% endblock %}
