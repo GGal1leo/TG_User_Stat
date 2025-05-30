@@ -24,8 +24,8 @@ A Telegram-based Indicator of Compromise (IOC) monitoring and collection system 
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/TG_User_Stat.git
-cd TG_User_Stat
+git clone https://github.com/GGal1leo/TG_IOC.git
+cd TG_IOC
 ```
 
 2. Install dependencies:
